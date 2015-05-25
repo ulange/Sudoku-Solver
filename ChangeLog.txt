@@ -1,0 +1,10 @@
+Sudoku-Solver
+Author: Uwe Lange, uwelange82@gmail.com
+Release date: 23.05.2015
+
+License: GPL
+
+-----------
+Version 1.0
+- first version to solve all Sudokus publlished in newspaper "Weser Kurier" from 16.05.2015 to 23.05.2015
+- verification added
