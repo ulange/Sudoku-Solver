@@ -7,9 +7,18 @@ ModelBox1x1::ModelBox1x1( QObject* parent ) :
 {
 }
 
+ModelBox1x1::ModelBox1x1( ModelBox1x1* right ):
+    m_value( right->m_value ),
+    m_solution( right->m_solution ),
+    m_row( right->m_row ),
+    m_col( right->m_col ),
+    m_possibilities( right->m_possibilities )
+{
+}
+
 ModelBox1x1::~ModelBox1x1()
 {
-
+    m_possibilities.clear();
 }
 
 void ModelBox1x1::init()

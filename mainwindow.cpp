@@ -5,6 +5,9 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QDebug>
+#include <QMessageBox>
+#include <QThread>
+#include <QApplication>
 
 MainWindow::MainWindow( QWidget *parent ) :
     QMainWindow( parent ),
@@ -42,8 +45,90 @@ MainWindow::~MainWindow()
 void MainWindow::init()
 {
     m_model->init();
-
+    m_modelsToBeTried.clear();
+    modelCounter = 0;
     updateView();
+}
+
+bool MainWindow::solveAll()
+{
+    while( m_model->solveOne() && m_model->verification() )
+    {
+        update();
+        qApp->processEvents();
+    }
+
+    if( m_model->isCompleted() )
+    {
+        qDebug() << "Finished!";
+        return true;
+    }
+
+    // Not completed: SPLIT ---------------------------------------------
+    if( m_model->verification() )
+    {
+        qDebug() << "Model is not completed. - trying out possibilities.";
+
+        //Search for boxes with only 2 (or at least the fewest) possibilities
+        int minPossibilities = 9;
+        int minRow = 0;
+        int minCol = 0;
+        for( int row = 0; row < ROWS; ++row )
+        {
+            for( int col = 0; col < COLS; ++col )
+            {
+                int currentPossibilitiesAmount = (int) m_model->getPossibilities( row, col ).size();
+                int currentValue = m_model->getValue( row, col );
+                if( currentValue == 0 && currentPossibilitiesAmount < minPossibilities )
+                {
+                    minPossibilities = currentPossibilitiesAmount;
+                    minRow = row;
+                    minCol = col;
+                }
+            }
+        }
+
+        qDebug() << "Trying from box with row:" << minRow << ", col:" << minCol;
+
+        //Copy model to have A and B
+        for( int i = 1; i < minPossibilities; ++i )
+        {
+            //Remember B
+            Model* modelB = new Model( m_model ); //modelB->print();
+            int currentPossibility = m_model->getPossibilities( minRow, minCol ).at( i );
+            modelB->setValue( currentPossibility, minRow, minCol );
+            m_modelsToBeTried.push_back( modelB );
+            ++modelCounter;
+        }
+
+        int value = m_model->getPossibilities( minRow, minCol ).at( 0 );
+        qDebug() << "Trying from box with row:" << minRow << ", col:" << minCol << "with value" << value;
+        //Start with A (possibility 0)
+        m_model->setValue( value, minRow, minCol );
+        update();
+        qApp->processEvents();
+
+        solveAll();
+
+    }
+    else //If completed -> finished (or also try B)
+    {
+        //Contradiction -> try out other model from m_modelsToBeTried
+        if( m_modelsToBeTried.empty() )
+        {
+            QMessageBox::critical( this, "Model", "No possible model left!");
+            return false;
+        }
+        else
+        {
+            delete m_model;
+            m_model = m_modelsToBeTried.front();
+            m_modelsToBeTried.pop_front();
+            solveAll();
+        }
+    }
+
+    return true;
 }
 
 void MainWindow::update()
@@ -68,6 +153,15 @@ void MainWindow::update()
     if( m_model->verification() )
     {
         qDebug() << "Verification successful!";
+    }
+    else
+    {
+        //QMessageBox::critical( this, "Verification", "Verification was not successful!");
+    }
+
+    if( m_model->isCompleted() )
+    {
+        QMessageBox::information( this, "Information", "Sudoku completed!\n Using " + QString::number( modelCounter ) + " guesses." );
     }
 }
 
@@ -118,6 +212,15 @@ void MainWindow::on_actionLoad_triggered()
     update();
 }
 
+void MainWindow::on_actionLoad_Image_triggered()
+{
+    QString fileName = QFileDialog::getOpenFileName( this,
+        tr( "Open Image File" ), "", tr( "Image Files (*.jpg)" ) );
+
+    //m_detector->fillModelFromImage( m_model, fileName );
+    update();
+}
+
 bool MainWindow::reducePossibilities()
 {
     bool returnValue = false;
@@ -144,6 +247,34 @@ bool MainWindow::reducePossibilities()
     returnValue |= m_model->findLinesInBoxes3x3();
 
     return returnValue;
+}
+
+void MainWindow::on_actionSolve_All_triggered()
+{
+    qDebug() << "Solve All";
+
+    solveAll();
+
+    if( !m_model->isCompleted() )
+    {
+        QMessageBox::critical( this, "Error", "Could not solve all!" );
+    }
+}
+
+
+
+void MainWindow::on_actionSolve_Next_Step_triggered()
+{
+    qDebug() << "Solve All";
+
+    if( m_model->solveOne() )
+    {
+        update();
+    }
+    else
+    {
+        QMessageBox::critical( this, "Error", "Could not solve next step!" );
+    }
 }
 
 void MainWindow::updateView()

@@ -9,9 +9,13 @@ class Model : public QObject
     Q_OBJECT
 public:
     explicit Model( QObject *parent = 0 );
+    Model( Model* right );
     ~Model();
 
     void init();
+
+    bool isCompleted();
+    bool solveOne();
 
     void setValue( int value, int row, int col );
     int getValue( int row, int col );
@@ -38,7 +42,10 @@ public:
     std::vector<ModelBox1x1*> getBoxes1x1InRow( int row );
     std::vector<ModelBox1x1*> getBoxes1x1InCol( int col );
 
+    //true means: everything is fine (no contradiction)
     bool verification();
+
+    void print();
 
 protected:
     std::vector< std::vector<ModelBox1x1*> > m_boxes;

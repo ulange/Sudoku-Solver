@@ -11,6 +11,7 @@ class ModelBox1x1 : public QObject
     Q_OBJECT
 public:
     explicit ModelBox1x1(QObject *parent = 0);
+    ModelBox1x1( ModelBox1x1* right );
     ~ModelBox1x1();
 
     void init();

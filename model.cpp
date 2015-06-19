@@ -13,13 +13,97 @@ Model::Model( QObject* parent ) : QObject( parent )
             currentBox->setCoordinates( row, col );
             modelRow.push_back( currentBox );
         }
+
+        m_boxes.push_back( modelRow );
+    }
+}
+
+Model::Model( Model* right )
+{
+    //Copy the boxes
+    for( int row = 0; row < ROWS; ++row )
+    {
+        std::vector<ModelBox1x1*> modelRow;
+
+        for( int col = 0; col < COLS; ++col )
+        {
+            ModelBox1x1* currentBox = new ModelBox1x1( right->m_boxes.at( row ).at( col ) );
+            modelRow.push_back( currentBox );
+        }
+
         m_boxes.push_back( modelRow );
     }
 }
 
 Model::~Model()
 {
+    for( int row = 0; row < ROWS; ++row )
+    {
+        std::vector<ModelBox1x1*> modelRow = m_boxes.at( row );
 
+        for( std::vector< ModelBox1x1* >::iterator it = modelRow.begin(); it != modelRow.end(); ++it )
+        {
+            delete (*it);
+        }
+    }
+}
+
+void Model::print()
+{
+    qDebug() << "Values";
+    for( int row = 0; row < ROWS; ++row )
+    {
+        QDebug deb = qDebug().nospace();
+        for( int col = 0; col < COLS; ++col )
+        {
+            deb << m_boxes.at( row ).at( col )->getValue() << ",";
+        }
+    }
+
+    qDebug() << "\n Current solutions";
+    for( int row = 0; row < ROWS; ++row )
+    {
+        QDebug deb = qDebug().nospace();
+        for( int col = 0; col < COLS; ++col )
+        {
+            deb << m_boxes.at( row ).at( col )->getSolution() << ",";
+        }
+    }
+}
+
+bool Model::isCompleted()
+{
+    for( int row = 0; row < ROWS; ++row )
+    {
+        for( int col = 0; col < COLS; ++col )
+        {
+            if( m_boxes.at( row ).at( col )->getValue() == 0 )
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Model::solveOne()
+{
+    for( int row = 0; row < ROWS; ++row )
+    {
+        for( int col = 0; col < COLS; ++col )
+        {
+            int value = m_boxes.at( row ).at( col )->getValue();
+            int solution = m_boxes.at( row ).at( col )->getSolution();
+            if( solution != 0 && value == 0 ) //Solution available but not yet set as value
+            {
+                m_boxes.at( row ).at( col )->setValue( solution );
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void Model::init()
